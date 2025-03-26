@@ -1,0 +1,887 @@
+const int MEMORY_SIZE = 1024;
+char memory[MEMORY_SIZE];
+bool allocated[MEMORY_SIZE] = {false};
+
+// Bellek ayırma fonksiyonu
+void* allocateMemory(int size)
+const int MEMORY_SIZE = 1024;
+char memory[MEMORY_SIZE];
+bool allocated[MEMORY_SIZE] = {false};
+
+// Bellek ayırma fonksiyonu
+void* allocateMemory(int size) {
+    for (int i = 0; i <= MEMORY_SIZE - size; ++i) {
+        bool canAllocate =
+void freeMemory(void* ptr, int size) {
+    int index = (char*)ptr - memory;
+    for (int i = 0; i < size; ++i) {
+        allocated[index + i] = false;
+    }
+}
+#include <stdint.h>
+#include <stdio.h>
+
+#define PCI_CONFIG_ADDRESS 0xCF8
+#define PCI_CONFIG_DATA 0xCFC
+
+uint32_t pciConfigRead(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (func << 8) | (offset & 0xFC) | (uint32_t)0x80000000);
+    outl(PCI_CONFIG_ADDRESS, address);
+    return inl(PCI_CONFIG_DATA);
+}
+
+void scanPCI() {
+    for (uint8_t bus = 0; bus < 256; bus++) {
+        for (uint8_t slot = 0; slot < 32; slot++) {
+            uint32_t data = pciConfigRead(bus, slot, 0, 0);
+            if (data != 0xFFFFFFFF) {
+                uint16_t vendorID = data & 0xFFFF;
+                uint16_t deviceID = (data >> 16) & 0xFFFF;
+                printf("PCI Device Found: Bus %d, Slot %d, Vendor ID: 0x%X, Device ID: 0x%X\n", bus, slot, vendorID, deviceID);
+            }
+        }
+    }
+}
+#include <stdint.h>
+#include <stdio.h>
+
+#define PCI_CONFIG_ADDRESS 0xCF8
+#define PCI_CONFIG_DATA 0xCFC
+
+// Portlara erişim için I/O işlemleri
+static inline void outl(uint16_t port, uint32_t val) {
+    asm volatile ("outl %0, %1" : : "a"(val), "dN"(port));
+}
+
+static inline uint32_t inl(uint16_t port) {
+    uint32_t ret;
+    asm volatile ("inl %1, %0" : "=a"(ret) : "dN"(port));
+    return ret;
+}
+
+// PCI yapılandırma alanından veri okuma
+uint32_t pciConfigRead(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (func << 8) | (offset & 0xFC) | (uint32_t)0x80000000);
+    outl(PCI_CONFIG_ADDRESS, address);
+    return inl(PCI_CONFIG_DATA);
+}
+
+// Basit sürücü yükleyici
+void loadDriver(uint16_t vendorID, uint16_t deviceID) {
+    if (vendorID == 0x8086) {  // Örneğin Intel donanımları
+        printf("Intel Donanımı Bulundu: Device ID 0x%X, Sürücü Yükleniyor...\n", deviceID);
+        // Buraya uygun sürücü yükleme kodu eklenebilir
+    } else if (vendorID == 0x10DE) {  // NVIDIA için örnek
+        printf("NVIDIA Donanımı Bulundu: Device ID 0x%X, Sürücü Yükleniyor...\n", deviceID);
+        // Buraya NVIDIA için sürücü yükleme kodu eklenebilir
+    } else {
+        printf("Bilinmeyen donanım: Vendor ID 0x%X, Device ID 0x%X. Sürücü bulunamadı.\n", vendorID, deviceID);
+    }
+}
+
+// PCI aygıtlarını tarayıp sürücüyü yükleyen fonksiyon
+void scanAndLoadDrivers() {
+    for (uint8_t bus = 0; bus < 256; bus++) {
+        for (uint8_t slot = 0; slot < 32; slot++) {
+            uint32_t data = pciConfigRead(bus, slot, 0, 0);
+            if (data != 0xFFFFFFFF) {
+                uint16_t vendorID = data & 0xFFFF;
+                uint16_t deviceID = (data >> 16) & 0xFFFF;
+                printf("PCI Aygıtı Bulundu: Bus %d, Slot %d, Vendor ID: 0x%X, Device ID: 0x%X\n", bus, slot, vendorID, deviceID);
+                loadDriver(vendorID, deviceID);
+            }
+        }
+    }
+}
+
+int main() {
+    scanAndLoadDrivers();
+    return 0;
+}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+#define PCI_CONFIG_ADDRESS 0xCF8
+#define PCI_CONFIG_DATA 0xCFC
+
+// Maksimum sürücü sayısını belirleyelim
+#define MAX_DRIVERS 256
+
+// Yüklü sürücüleri takip eden yapı
+typedef struct {
+    uint16_t vendorID;
+    uint16_t deviceID;
+    bool loaded;
+} DriverEntry;
+
+DriverEntry loadedDrivers[MAX_DRIVERS];
+int driverCount = 0;
+
+// Portlara erişim için I/O işlemleri
+static inline void outl(uint16_t port, uint32_t val) {
+    asm volatile ("outl %0, %1" : : "a"(val), "dN"(port));
+}
+
+static inline uint32_t inl(uint16_t port) {
+    uint32_t ret;
+    asm volatile ("inl %1, %0" : "=a"(ret) : "dN"(port));
+    return ret;
+}
+
+// PCI yapılandırma alanından veri okuma
+uint32_t pciConfigRead(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (func << 8) | (offset & 0xFC) | (uint32_t)0x80000000);
+    outl(PCI_CONFIG_ADDRESS, address);
+    return inl(PCI_CONFIG_DATA);
+}
+
+// Sürücü zaten yüklü mü kontrol et
+bool isDriverLoaded(uint16_t vendorID, uint16_t deviceID) {
+    for (int i = 0; i < driverCount; i++) {
+        if (loadedDrivers[i].vendorID == vendorID && loadedDrivers[i].deviceID == deviceID) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Sürücü yükleme fonksiyonu (eğer gerekliyse)
+void loadDriver(uint16_t vendorID, uint16_t deviceID) {
+    if (isDriverLoaded(vendorID, deviceID)) {
+        printf("Sürücü zaten yüklü: Vendor ID 0x%X, Device ID 0x%X\n", vendorID, deviceID);
+        return;
+    }
+
+    if (vendorID == 0x8086) {  // Örneğin Intel donanımları
+        printf("Intel Donanımı Bulundu: Device ID 0x%X, Sürücü Yükleniyor...\n", deviceID);
+    } else if (vendorID == 0x10DE) {  // NVIDIA için örnek
+        printf("NVIDIA Donanımı Bulundu: Device ID 0x%X, Sürücü Yükleniyor...\n", deviceID);
+    } else {
+        printf("Bilinmeyen donanım: Vendor ID 0x%X, Device ID 0x%X. Sürücü bulunamadı.\n", vendorID, deviceID);
+    }
+
+    // Sürücü başarıyla yüklendi, listeye ekleyelim
+    if (driverCount < MAX_DRIVERS) {
+        loadedDrivers[driverCount].vendorID = vendorID;
+        loadedDrivers[driverCount].deviceID = deviceID;
+        loadedDrivers[driverCount].loaded = true;
+        driverCount++;
+    }
+}
+
+// PCI aygıtlarını tarayıp sürücüyü yükleyen fonksiyon
+void scanAndLoadDrivers() {
+    for (uint8_t bus = 0; bus < 256; bus++) {
+        for (uint8_t slot = 0; slot < 32; slot++) {
+            uint32_t data = pciConfigRead(bus, slot, 0, 0);
+            if (data != 0xFFFFFFFF) {
+                uint16_t vendorID = data & 0xFFFF;
+                uint16_t deviceID = (data >> 16) & 0xFFFF;
+                printf("PCI Aygıtı Bulundu: Bus %d, Slot %d, Vendor ID: 0x%X, Device ID: 0x%X\n", bus, slot, vendorID, deviceID);
+                loadDriver(vendorID, deviceID);
+            }
+        }
+    }
+}
+
+int main() {
+    scanAndLoadDrivers();
+    return 0;
+}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <unistd.h> // sleep() fonksiyonu için
+
+#define PCI_CONFIG_ADDRESS 0xCF8
+#define PCI_CONFIG_DATA 0xCFC
+
+#define MAX_DRIVERS 256
+
+typedef struct {
+    uint16_t vendorID;
+    uint16_t deviceID;
+    bool loaded;
+} DriverEntry;
+
+DriverEntry loadedDrivers[MAX_DRIVERS];
+int driverCount = 0;
+
+static inline void outl(uint16_t port, uint32_t val) {
+    asm volatile ("outl %0, %1" : : "a"(val), "dN"(port));
+}
+
+static inline uint32_t inl(uint16_t port) {
+    uint32_t ret;
+    asm volatile ("inl %1, %0" : "=a"(ret) : "dN"(port));
+    return ret;
+}
+
+uint32_t pciConfigRead(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (func << 8) | (offset & 0xFC) | (uint32_t)0x80000000);
+    outl(PCI_CONFIG_ADDRESS, address);
+    return inl(PCI_CONFIG_DATA);
+}
+
+bool isDriverLoaded(uint16_t vendorID, uint16_t deviceID) {
+    for (int i = 0; i < driverCount; i++) {
+        if (loadedDrivers[i].vendorID == vendorID && loadedDrivers[i].deviceID == deviceID) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void loadDriver(uint16_t vendorID, uint16_t deviceID) {
+    if (isDriverLoaded(vendorID, deviceID)) {
+        printf("Sürücü zaten yüklü: Vendor ID 0x%X, Device ID 0x%X\n", vendorID, deviceID);
+        printf("Sürücü yükleme iptal edildi. 3 saniye bekleniyor...\n");
+        sleep(3);
+        return;
+    }
+
+    if (vendorID == 0x8086) {
+        printf("Intel Donanımı Bulundu: Device ID 0x%X, Sürücü Yükleniyor...\n", deviceID);
+    } else if (vendorID == 0x10DE) {
+        printf("NVIDIA Donanımı Bulundu: Device ID 0x%X, Sürücü Yükleniyor...\n", deviceID);
+    } else {
+        printf("Bilinmeyen donanım: Vendor ID 0x%X, Device ID 0x%X. Sürücü bulunamadı.\n", vendorID, deviceID);
+    }
+
+    if (driverCount < MAX_DRIVERS) {
+        loadedDrivers[driverCount].vendorID = vendorID;
+        loadedDrivers[driverCount].deviceID = deviceID;
+        loadedDrivers[driverCount].loaded = true;
+        driverCount++;
+    }
+}
+
+void scanAndLoadDrivers() {
+    for (uint8_t bus = 0; bus < 256; bus++) {
+        for (uint8_t slot = 0; slot < 32; slot++) {
+            uint32_t data = pciConfigRead(bus, slot, 0, 0);
+            if (data != 0xFFFFFFFF) {
+       
+#include <stdint.h>
+#include <stdio.h>
+
+#define VGA_ADDRESS 0xB8000
+#define SCREEN_WIDTH 80
+#define SCREEN_HEIGHT 25
+
+void blueScreen(const char* message) {
+    volatile uint16_t* vga = (uint16_t*)VGA_ADDRESS;
+    
+    // Mavi arka plan ve beyaz yazı (renk kodu: 0x1F)
+    for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
+        vga[i] = (0x1F << 8) | ' '; // Mavi arka plan, boş karakter
+    }
+
+    // Mesajı ekrana yaz
+    int i = 0;
+    while (message[i] != '\0' && i < SCREEN_WIDTH * SCREEN_HEIGHT) {
+        vga[i] = (0x1F << 8) | message[i];
+        i++;
+    }
+
+    // Sonsuz döngüye girerek sistemi durdur
+    while (1);
+}
+
+int main() {
+    blueScreen("HATA: Sistem durduruldu. Yeniden baslatin.");
+    return 0;
+}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h> // for sleep()
+
+#define AVAST_INSTALL_PATH "/path/to/avast_installer.exe"
+#define DRIVERPACK_INSTALL_PATH "/path/to/driverpack_installer.exe"
+
+void runInstaller(const char* installerPath) {
+    printf("Kurulum baslatiliyor: %s\n", installerPath);
+
+    // Sistem komutuyla kurulum dosyasını çalıştır (Linux için)
+    int status = system(installerPath);
+    
+    if (status == 0) {
+        printf("Kurulum başarılı: %s\n", installerPath);
+    } else {
+        printf("Kurulum hatası: %s\n", installerPath);
+    }
+}
+
+void installAvastAndDriverPack() {
+    // Avast ve DriverPack'i yükleyelim
+    printf("Avast ve DriverPack yükleniyor...\n");
+
+    // Avast'ı yükle
+    runInstaller(AVAST_INSTALL_PATH);
+
+    // DriverPack'i yükle
+    runInstaller(DRIVERPACK_INSTALL_PATH);
+}
+
+int main() {
+    // Yükleme işlemi başlatılıyor
+    installAvastAndDriverPack();
+    
+    // Yükleme sonrası 5 saniye bekle (Kullanıcıya mesaj vermek için)
+    sleep(5);
+
+    printf("Sistem hazır. Avast ve DriverPack yüklemesi tamamlandı.\n");
+
+    return 0;
+}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h> // for sleep()
+#include <string.h>
+
+// Yükleme dosyalarının bulunduğu yerler (örnek)
+#define AVAST_INSTALL_PATH "/path/to/avast_installer.exe"
+#define DRIVERPACK_INSTALL_PATH "/path/to/driverpack_installer.exe"
+
+// Sabit diske kurulacak dizin (örnek)
+#define INSTALL_DIR "/mnt/installer/"
+
+// Kurulum dosyalarını kopyalamak için fonksiyon
+void copyInstallerToDisk(const char* installerPath, const char* installLocation) {
+    char command[512];
+    snprintf(command, sizeof(command), "cp %s %s", installerPath, installLocation); // Linux komutları için
+
+    printf("Kurulum dosyası %s dizinine kopyalanıyor...\n", installLocation);
+    int status = system(command);
+    
+    if (status == 0) {
+        printf("Kurulum dosyası başarıyla kopyalandı.\n");
+    } else {
+        printf("Kurulum dosyasını kopyalama hatası.\n");
+    }
+}
+
+// Kurulum dosyasını çalıştırmak için fonksiyon
+void runInstaller(const char* installerPath) {
+    printf("Kurulum başlatılıyor: %s\n", installerPath);
+
+    // Sistem komutuyla kurulum dosyasını çalıştır
+    int status = system(installerPath);
+    
+    if (status == 0) {
+        printf("Kurulum başarılı: %s\n", installerPath);
+    } else {
+        printf("Kurulum hatası: %s\n", installerPath);
+    }
+}
+
+// Kurulum seçeneklerini sunan fonksiyon
+void promptInstallation() {
+    int choice;
+    printf("Kurulum Seçeneği: \n");
+    printf("1. Sabit diske kurulum (kurulum dosyalarını diske kopyalayarak)\n");
+    printf("2. Direkt kurulumu başlat\n");
+    printf("Bir seçenek girin (1 veya 2): ");
+    scanf("%d", &choice);
+
+    if (choice == 1) {
+        // Sabit diske kopyalama
+        copyInstallerToDisk(AVAST_INSTALL_PATH, INSTALL_DIR);
+        copyInstallerToDisk(DRIVERPACK_INSTALL_PATH, INSTALL_DIR);
+
+        // Kurulum dosyalarını diske kopyalayarak başlat
+        char installCommandAvast[512], installCommandDriverPack[512];
+        snprintf(installCommandAvast, sizeof(installCommandAvast), "%savast_installer.exe", INSTALL_DIR);
+        snprintf(installCommandDriverPack, sizeof(installCommandDriverPack), "%sdriverpack_installer.exe", INSTALL_DIR);
+        
+        runInstaller(installCommandAvast);
+        runInstaller(installCommandDriverPack);
+    } else if (choice == 2) {
+        // Direkt kurulum başlat
+        runInstaller(AVAST_INSTALL_PATH);
+        runInstaller(DRIVERPACK_INSTALL_PATH);
+    } else {
+        printf("Geçersiz seçenek! Lütfen 1 veya 2 girin.\n");
+    }
+}
+
+int main() {
+    // Kurulum başlatma
+    promptInstallation();
+    
+    // Yükleme sonrası 5 saniye bekle
+    sleep(5);
+
+    printf("Sistem hazır. Avast ve DriverPack yüklemesi tamamlandı.\n");
+
+    return 0;
+}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// Grafik ve pencere işlemleri için temel API kullanacağız
+void drawTransparentWindow() {
+    // Grafik penceresi başlatma kodu
+    // (Burada, grafik kitaplığına göre yazılmalıdır; örneğin SDL2 veya OpenGL gibi)
+    
+    // Bu, basit bir örnek olarak şeffaf pencereyi işaret eder.
+    printf("Aero tarzı şeffaf pencere efekti başlatılıyor...\n");
+    
+    // Gerçek şeffaflık için, pencerenin arka planını belirli bir opaklıkta (örneğin %50 şeffaf) yapmamız gerekir.
+    // Bu, OpenGL veya SDL gibi bir grafik kütüphanesi kullanarak yapılabilir.
+    
+    // Örnek (SDL/OpenGL yerine bir genel yaklaşım olarak): 
+    // - Grafik penceresini oluştur
+    // - Şeffaflık ve görsel efektleri etkinleştir
+    // - Pencereyi aç ve şeffaf hale getir
+
+    // Kullanıcıya mesaj
+    printf("Şeffaf pencere efekti simüle edildi.\n");
+}
+
+int main() {
+    // Aero tarzı pencereyi başlatıyoruz
+    drawTransparentWindow();
+    
+    return 0;
+}
+@echo off
+:: Rufus yükleyicisini başlatıyoruz
+echo Rufus kurulumu başlıyor...
+start /wait RufusPortable.exe
+:: Kurulum tamamlandığında kullanıcıyı bilgilendiriyoruz
+echo Rufus kurulumu tamamlandı.
+pause
+#include <graphics.h> // Grafik modunu kullanabilmek için
+#include <conio.h> // Klavye girişini kontrol etmek için
+
+// Çökme ekranını gösteren fonksiyon
+void show_blue_screen(const char* error_message) {
+    // Grafik modunu başlatıyoruz
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik ekranı başlatma
+
+    // Mavi ekran rengi
+    setfillstyle(SOLID_FILL, BLUE); // Ekranı mavi yapıyoruz
+    floodfill(320, 240, WHITE); // Ekranı dolduruyoruz
+
+    // Hata başlığı yazıyoruz
+    setcolor(WHITE);
+    outtextxy(100, 50, "SISTEM HATASI!"); // Başlık
+
+    // Kullanıcıya açıklayıcı hata mesajını ekliyoruz
+    outtextxy(100, 100, "Bir hata meydana geldi. Sistem durdu.");
+    outtextxy(100, 120, error_message); // Kullanıcıya verilen hata mesajı
+
+    // Ekstra bilgi (opsiyonel)
+    outtextxy(100, 160, "Lutfen bilgisayarınızı yeniden baslatin.");
+    outtextxy(100, 180, "Bu hata, sistemin calismasini engelledi.");
+
+    // Kullanıcının herhangi bir tuşa basmasını bekliyoruz
+    getch(); // Tuşa basıldığında program sonlanır
+
+    closegraph(); // Grafik modunu kapatıyoruz
+}
+
+int main() {
+    // Hata mesajı
+    const char* error_message = "Bellek hatasi: Bellek bolgesine erisim hatasi!";
+    
+    // Çökme ekranını gösteriyoruz
+    show_blue_screen(error_message);
+
+    return 0;
+}
+#include <graphics.h> // Grafik modunu kullanabilmek için
+#include <conio.h> // Klavye girişini kontrol etmek için
+
+// Kurtarma ekranını gösteren fonksiyon
+void show_recovery_screen() {
+    // Grafik modunu başlatıyoruz
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik ekranı başlatma
+
+    // Mavi ekran rengi
+    setfillstyle(SOLID_FILL, BLUE); // Ekranı mavi yapıyoruz
+    floodfill(320, 240, WHITE); // Ekranı dolduruyoruz
+
+    // Kurtarma ekran başlığı
+    setcolor(WHITE);
+    outtextxy(100, 50, "DUNYA OS RECOVERY MENU"); // Başlık
+
+    // Kurtarma seçeneklerini yazıyoruz
+    outtextxy(100, 100, "1. Sistemi Yeniden Baslat");
+    outtextxy(100, 120, "2. Sistem Geri Yükleme");
+    outtextxy(100, 140, "3. Dosya Onarimi");
+    outtextxy(100, 160, "4. Cikis");
+
+    // Kullanıcıdan seçim bekliyoruz
+    char choice = getch(); // Kullanıcı tuşa basacak
+
+    // Seçime göre işlem yapıyoruz
+    switch(choice) {
+        case '1': {
+            outtextxy(100, 180, "Sistem yeniden baslatiliyor...");
+            // Burada sistemi yeniden başlatma kodu olacak
+            break;
+        }
+        case '2': {
+            outtextxy(100, 180, "Sistem geri yukleniyor...");
+            // Burada geri yükleme işlemi yapılacak
+            break;
+        }
+        case '3': {
+            outtextxy(100, 180, "Dosya sistemini onariyoruz...");
+            // Burada dosya onarımı yapılacak
+            break;
+        }
+        case '4': {
+            outtextxy(100, 180, "Cikis yapiliyor...");
+            // Kullanıcı çıkış yaparsa, programı sonlandırıyoruz
+            break;
+        }
+        default:
+            outtextxy(100, 180, "Gecersiz secim! Lutfen tekrar deneyin.");
+            break;
+    }
+
+    // Kullanıcının herhangi bir tuşa basmasını bekliyoruz
+    getch(); // Tuşa basıldığında program sonlanır
+    closegraph(); // Grafik modunu kapatıyoruz
+}
+
+int main() {
+    // Ku
+#include <graphics.h> // Grafik modunu kullanabilmek için
+#include <conio.h> // Klavye girişini kontrol etmek için
+
+// Kurtarma ekranını gösteren fonksiyon
+void show_recovery_screen() {
+    // Grafik modunu başlatıyoruz
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik ekranı başlatma
+
+    // Mavi ekran rengi
+    setfillstyle(SOLID_FILL, BLUE); // Ekranı mavi yapıyoruz
+    floodfill(320, 240, WHITE); // Ekranı dolduruyoruz
+
+    // Kurtarma ekran başlığı
+    setcolor(WHITE);
+    outtextxy(100, 50, "DUNYA OS RECOVERY MENU"); // Başlık
+
+    // Kurtarma seçeneklerini yazıyoruz
+    outtextxy(100, 100, "1. Sistemi Yeniden Baslat");
+    outtextxy(100, 120, "2. Sistem Geri Yükleme");
+    outtextxy(100, 140, "3. Dosya Onarimi");
+    outtextxy(100, 160, "4. Yedek Kurtarma Sürücüsünü Kullan");
+    outtextxy(100, 180, "5. Cikis");
+
+    // Kullanıcıdan seçim bekliyoruz
+    char choice = getch(); // Kullanıcı tuşa basacak
+
+    // Seçime göre işlem yapıyoruz
+    switch(choice) {
+        case '1': {
+            outtextxy(100, 200, "Sistem yeniden baslatiliyor...");
+            // Burada sistemi yeniden başlatma kodu olacak
+            break;
+        }
+        case '2': {
+            outtextxy(100, 200, "Sistem geri yukleniyor...");
+            // Burada geri yükleme işlemi yapılacak
+            break;
+        }
+        case '3': {
+            outtextxy(100, 200, "Dosya sistemini onariyoruz...");
+            // Burada dosya onarımı yapılacak
+            break;
+        }
+        case '4': {
+            outtextxy(100, 200, "Yedek Kurtarma Surucusu kullaniliyor...");
+            // Burada yedek kurtarma sürücüsüne yönlendirme yapılacak
+            // Kullanıcıya, yedek kurtarma sürücüsü aracılığıyla kurtarma işlemi yapılacak.
+            break;
+        }
+        case '5': {
+            outtextxy(100, 200, "Cikis yapiliyor...");
+            // Kullanıcı çıkış yaparsa, programı sonlandırıyoruz
+            break;
+        }
+        default:
+            outtextxy(100, 200, "Gecersiz secim! Lutfen tekrar deneyin.");
+            break;
+    }
+
+    // Kullanıcının herhangi bir tuşa basmasını bekliyoruz
+    getch(); // Tuşa basıldığında program sonlanır
+    closegraph(); // Grafik modunu kapatıyoruz
+}
+
+int main() {
+    // Kurtarma ekranını gösteriyoruz
+    show_recovery_screen();
+
+    return 0;
+}
+void use_backup_recovery_drive() {
+    // Yedek kurtarma sürücüsüne bağlı olup olmadığını kontrol ediyoruz
+    // Örnek olarak, bir USB veya harici diskin varlığını kontrol edebiliriz
+    // Burada kodu yedek sürücü için başlatabiliriz, örneğin:
+    
+    if (is_backup_drive_connected()) {
+        // Yedek sürücü bağlantısı sağlanmışsa, kurtarma işlemlerini başlatıyoruz
+        start_recovery_process_from_backup_drive();
+    } else {
+        // Yedek sürücü bağlantısı sağlanmamışsa, kullanıcıyı bilgilendiriyoruz
+        show_message("Yedek Kurtarma Surucusu Bulunamadi. Lutfen surucuyu baglayin.");
+    }
+}
+#include <graphics.h>  // Grafik modunu kullanabilmek için
+#include <conio.h>      // Klavye girişini kontrol etmek için
+#include <iostream>     // Giriş-çıkış işlemleri için
+
+void show_transfer_screen() {
+    // Grafik modunu başlatıyoruz
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik ekranı başlatma
+
+    // Kablolu aktarım ekranının rengini belirliyoruz
+    setfillstyle(SOLID_FILL, LIGHTGREEN);
+    floodfill(320, 240, WHITE); // Ekranı dolduruyoruz
+
+    // Başlık ve talimatlar
+    setcolor(WHITE);
+    outtextxy(100, 50, "KABLOLU AKTARIM EKRANI"); // Başlık
+    outtextxy(100, 80, "1. Dosya veya Klasor Seçin.");
+    outtextxy(100, 100, "2. Aktarim Baslat.");
+    outtextxy(100, 120, "3. Aktarim Durumu:");
+
+    // Kullanıcıdan dosya seçmesini bekliyoruz (Basit simülasyon)
+    outtextxy(100, 140, "Dosya seciliyor...");
+
+    // Dosya seçildiği varsayalım (Gerçek dosya seçimi için dosya diyalog penceresi açılmalı)
+    delay(2000); // 2 saniye bekleyelim (dosya seçimi simülasyonu)
+
+    outtextxy(100, 160, "Dosya secildi: 'dosya.txt'");
+
+    // Aktarım işlemi başlatıyoruz
+    outtextxy(100, 180, "Aktarim basliyor...");
+
+    // İlerleme çubuğunu başlatıyoruz
+    int i;
+    setcolor(YELLOW);
+    for (i = 0; i <= 100; i++) {
+        // Aktarım ilerleme çubuğunu çiziyoruz
+        rectangle(100, 200, 300, 220);
+        setfillstyle(SOLID_FILL, BLUE);
+        floodfill(101, 201, YELLOW);
+        floodfill(101 + i * 2, 201, YELLOW); // İlerleme oranına göre
+
+        delay(50); // Her adımda 50ms bekle (ilerleme)
+    }
+
+    // Aktarım tamamlandıktan sonra kullanıcıya bilgi veriyoruz
+    outtextxy(100, 240, "Aktarim tamamlandi!");
+    outtextxy(100, 260, "Baslamak icin bir tusa basiniz.");
+
+    // Kullanıcıdan tuşa basmasını bekliyoruz
+    getch(); // Tuşa basıldığında program sonlanır
+    closegraph(); // Grafik modunu kapatıyoruz
+}
+
+int main() {
+    // Kablolu aktarım ekranını gösteriyoruz
+    show_transfer_screen();
+
+    return 0;
+}
+#include <iostream>
+#include <fstream>
+#include <winsock2.h>  // Windows için soketler
+
+// Dosya aktarımı yapmak için TCP bağlantısı kuruyoruz
+void send_file(const char* file_path, const char* server_ip, int server_port) {
+    // Soket başlatma
+    WSADATA wsa;
+    SOCKET sock;
+    struct sockaddr_in server;
+
+    WSAStartup(MAKEWORD(2,2), &wsa);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    server.sin_family = AF_INET;
+    server.sin_port = htons(server_port);
+    server.sin_addr.s_addr = inet_addr(server_ip);
+
+    connect(sock, (struct sockaddr*)&server, sizeof(server));
+
+    // Dosya açma
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Dosya acilamadi!" << std::endl;
+        return;
+    }
+
+    // Dosya verisini gönderme
+    char buffer[1024];
+    while (!file.eof()) {
+        file.read(buffer, sizeof(buffer));
+        send(sock, buffer, file.gcount(), 0);
+    }
+
+    // Soketi kapatma
+    file.close();
+    closesocket(sock);
+    WSACleanup();
+}
+
+int main() {
+    // Dosya aktarımını başlatıyoruz
+    send_file("dosya.txt", "192.168.1.100", 8080); // IP ve port bilgisi ile
+    return 0;
+}
+#include <graphics.h>   // Grafik modunu kullanabilmek için
+#include <conio.h>       // Klavye girişini kontrol etmek için
+#include <iostream>      // Giriş-çıkış işlemleri için
+
+// Kamera tanımlanamadığı zaman gösterilecek ekran
+void show_camera_error_screen() {
+    // Grafik modunu başlatıyoruz
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik ekranı başlatma
+
+    // Kamera tanımlanamadığı ekranın rengini belirliyoruz
+    setfillstyle(SOLID_FILL, RED);
+    floodfill(320, 240, WHITE); // Ekranı dolduruyoruz
+
+    // Başlık ve talimatlar
+    setcolor(WHITE);
+    outtextxy(100, 50, "KAMERA TANIMLANAMADI"); // Başlık
+
+    // Kullanıcıya hata mesajı
+    outtextxy(100, 80, "Sistemde kamera bulunamadi.");
+    outtextxy(100, 100, "Kamera baglantisini kontrol edin.");
+    outtextxy(100, 120, "Kamera surucusunu kontrol edin.");
+    outtextxy(100, 140, "Yeniden deneyin.");
+
+    // Kullanıcıdan geri bildirim almak için bir mesaj
+    outtextxy(100, 160, "Bir tusa basarak cikis yapabilirsiniz.");
+
+    // Kullanıcıdan tuşa basmasını bekliyoruz
+    getch(); // Tuşa basıldığında program sonlanır
+    closegraph(); // Grafik modunu kapatıyoruz
+}
+
+// Kamera tespiti simülasyonu
+bool detect_camera() {
+    // Burada kamera tespiti yapılacak. Örneğin, USB cihazları veya sistemdeki kameraları kontrol edebiliriz.
+    // Bu, basit bir simülasyon olarak "false" dönecek, gerçek tespit için platforma özgü API'ler kullanılabilir.
+    return false; // Kamerayı tanımlayamıyoruz, hatayı simüle ediyoruz.
+}
+
+int main() {
+    // Kamera tespiti yapıyoruz
+    if (!detect_camera()) {
+        // Eğer kamera bulunamazsa, hata ekranını gösteriyoruz
+        show_camera_error_screen();
+    } else {
+        std::cout << "Kamera tanimlandi!" << std::endl;
+    }
+
+    return 0;
+}
+#include <graphics.h>   // Grafik modunu kullanabilmek için
+#include <conio.h>       // Klavye girişini kontrol etmek için
+#include <iostream>      // Giriş-çıkış işlemleri için
+
+// Kamera tanımlanamadığı zaman gösterilecek ekran
+void show_camera_error_screen() {
+    // Grafik modunu başlatıyoruz
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik ekranı başlatma
+
+    // Kamera tanımlanamadığı ekranın rengini belirliyoruz
+    setfillstyle(SOLID_FILL, RED);
+    floodfill(320, 240, WHITE); // Ekranı dolduruyoruz
+
+    // Başlık ve talimatlar
+    setcolor(WHITE);
+    outtextxy(100, 50, "KAMERA TANIMLANAMADI"); // Başlık
+    outtextxy(100, 80, "Sistemde kamera bulunamadi.");
+    outtextxy(100, 100, "Kamera baglantisini kontrol edin.");
+    outtextxy(100, 120, "Kamera surucusunu kontrol edin.");
+    outtextxy(100, 140, "Yeniden deneyin.");
+
+    // "Tamam" butonunu çiziyoruz
+    rectangle(200, 200, 300, 230);  // Buton boyutu
+    setfillstyle(SOLID_FILL, BLUE);   // Buton rengi
+    floodfill(210, 210, WHITE);       // Buton içi dolgu
+    setcolor(WHITE);
+    outtextxy(220, 210, "TAMAM");     // Buton üzerinde yazı
+
+    // Kullanıcının "Tamam" butonuna tıklayıp tıklamadığını kontrol etmek için:
+    while (true) {
+        int mouseX, mouseY;
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            getmouseclick(WM_LBUTTONDOWN, mouseX, mouseY); // Fare tıklaması
+            // Eğer fare tıklaması "Tamam" butonuna düşerse
+            if (mouseX >= 200 && mouseX <= 300 && mouseY >= 200 && mouseY <= 230) {
+                break; // "Tamam" butonuna tıklanırsa çık
+            }
+        }
+    }
+
+    // Grafik modunu kapatıyoruz
+    closegraph(); // Grafik modunu kapatıyoruz
+}
+
+// Kamera tespiti simülasyonu
+bool detect_camera() {
+    // Burada kamera tespiti yapılacak. Örneğin, USB cihazları veya sistemdeki kameraları kontrol edebiliriz.
+    // Bu, basit bir simülasyon olarak "false" dönecek, gerçek tespit için platforma özgü API'ler kullanılabilir.
+    return false; // Kamerayı tanımlayamıyoruz, hatayı simüle ediyoruz.
+}
+
+int main() {
+    // Kamera tespiti yapıyoruz
+    if (!detect_camera()) {
+        // Eğer kamera bulunamazsa, hata ekranını gösteriyoruz
+        show_camera_error_screen();
+    } else {
+        std::cout << "Kamera tanimlandi!" << std::endl;
+    }
+
+    return 0;
+}
+#include <graphics.h>
+#include <conio.h>
+#include <iostream>
+
+void show_loading_screen() {
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI"); // Grafik modunu başlatıyoruz
+
+    // Arka planı temizliyoruz
+    setfillstyle(SOLID_FILL, LIGHTGRAY);
+    floodfill(320, 240, WHITE);
+
+    // Başlık
+    setcolor(RED);
+    outtextxy(100, 50, "DUNYA OS YUKLENIYOR...");
+
+    // "Yükleniyor" animasyonu
+    for (int i = 0; i < 10; i++) {
+        rectangle(100 + (i * 20), 100, 120 + (i * 20), 130);  // Küçük kutular
+        delay(100);  // Bekleme süresi
+    }
+
+    // Başlangıçta hafif uygulamaları başlat
+    outtextxy(100, 200, "Hafif uygulamalar baslatiliyor...");
+    delay(1000); // 1 saniye bekleyin
+
+    // Grafik modunu kapatıyoruz
+    closegraph(); 
+}
+
+int main() {
+    show_loading_screen();
+    std::cout << "Dünya OS Baslatıldı!" << std::endl;
+    return 0;
+}
